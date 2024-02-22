@@ -1,0 +1,618 @@
+using System;
+using System.Collections.Generic;
+class Program
+{
+    static Random random = new Random();
+    
+    //Função para iniciar jogo
+
+
+    //Função main
+    static void Main(string[] args)
+    {
+        Jogo.iniciarJogo();
+    }
+}
+
+
+
+using System;
+using System.Collections.Generic;
+
+class Jogo
+{
+    private static Random random = new Random();
+
+    public static void iniciarJogo()
+    {
+        Console.Write("Digite o nome do seu personagem: ");
+        string nome = Console.ReadLine();
+        Personagem jogador = new Personagem(nome);
+        jogador.DistribuirAtributos();
+
+        List<Terreno> terrenos = new List<Terreno>
+        {
+            new Terreno("Floresta"),
+            new Terreno("Montanha"),
+            new Terreno("Caverna"),
+            new Terreno("Deserto")
+        };
+
+        bool jogoAtivo = true;
+        while (jogador.hp > 0 && jogoAtivo)
+        {
+            ExibirStatusDoJogador(jogador);
+            ExibirOpcoesDeTerreno(terrenos);
+
+            Console.WriteLine($"{terrenos.Count + 1}. Cidade");
+            Console.WriteLine($"{terrenos.Count + 2}. Sair");
+
+            int escolha;
+            if (int.TryParse(Console.ReadLine(), out escolha))
+            {
+                if (escolha >= 1 && escolha <= terrenos.Count)
+                {
+                    Terreno lugarEscolhido = terrenos[escolha - 1];
+                    int chanceBatalha = random.Next(1, 3); // 50% de chance: 1 ou 2
+                    if (chanceBatalha == 1)
+                    {
+                        
+                       Monstro monstro = GeradorDeMonstros.CriarMonstro();
+                        Console.WriteLine($"\nUm {monstro.nome} selvagem apareceu!");
+                        Batalhar.batalhar(jogador, monstro);
+                    }
+                    lugarEscolhido.Missao(jogador);
+                }
+                else if (escolha == terrenos.Count + 1)
+                {
+                    Cidade.cidade(jogador); // Chama o método da classe Cidade
+                }
+                else if (escolha == terrenos.Count + 2)
+                {
+                    jogoAtivo = false; // Trata a opção de sair do jogo
+                }
+                else
+                {
+                    ExibirMensagemDeErro();
+                }
+            }
+            else
+            {
+                ExibirMensagemDeErro();
+            }
+        }
+
+        if (jogador.hp <= 0)
+        {
+            Console.WriteLine("\nVocê morreu. Fim de jogo!");
+        }
+        else
+        {
+            Console.WriteLine("\nVocê escolheu sair. Fim de jogo!");
+        }
+    }
+
+    private static void ExibirStatusDoJogador(Personagem jogador)
+    {
+        Console.WriteLine($"\n\nStatus de {jogador.nome}\nHP: {jogador.hp}\nAtaque: {jogador.ataque}\nDefesa: {jogador.defesa}\nOuro: {jogador.ouro}\n");
+    }
+
+    private static void ExibirOpcoesDeTerreno(List<Terreno> terrenos)
+    {
+        Console.WriteLine("Onde você gostaria de ir?");
+        for (int i = 0; i < terrenos.Count; i++)
+        {
+            Console.WriteLine($"{i + 1}. {terrenos[i].nome}");
+        }
+    }
+
+    private static void ExibirMensagemDeErro()
+    {
+        Console.WriteLine("\nEscolha inválida!\n");
+    }
+}
+
+
+
+class Personagem
+{
+    public string nome;
+    public int hp;
+    public int ataque;
+    public int defesa;
+    public int ouro;
+    public List<string> inventario;
+
+    public Personagem(string nome)
+    {
+        this.nome = nome;
+        this.hp = 55;
+        this.ataque = 2;
+        this.defesa = 1;
+        this.ouro = 10;
+        this.inventario = new List<string>();
+    }
+// Distribuição inicial de pontos
+    public void DistribuirAtributos()
+    {
+        int pontos = 20;
+        while (pontos > 0)
+        {
+            Console.WriteLine($"\nPontos restantes: {pontos}");
+            Console.WriteLine("Distribua seus pontos entre Ataque, Defesa e HP.");
+
+            try
+            {
+                Console.Write("Quantos pontos você deseja adicionar ao Ataque? ");
+                int ataque = int.Parse(Console.ReadLine());
+
+                Console.Write("Quantos pontos você deseja adicionar à Defesa? ");
+                int defesa = int.Parse(Console.ReadLine());
+
+                Console.Write("Quantos pontos você deseja adicionar ao HP? ");
+                int hp = int.Parse(Console.ReadLine());
+
+                if (ataque + defesa + hp <= pontos)
+                {
+                    this.ataque += ataque;
+                    this.defesa += defesa;
+                    this.hp += hp + 30; // O mínimo de hp é 30
+                    pontos -= (ataque + defesa + hp);
+                }
+                else
+                {
+                    Console.WriteLine("\nVocê tentou distribuir mais pontos do que tinha disponível. Tente novamente.");
+                }
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("\nEntrada inválida. Use apenas números. Tente novamente.");
+            }
+        }
+
+        Console.WriteLine($"\nAtributos definidos! Ataque: {this.ataque}, Defesa: {this.defesa}, HP: {this.hp}");
+    }
+//Efeito dos itens
+    public void ComprarItem(string item, int custo)
+    {
+        if (this.ouro >= custo)
+        {
+            this.ouro -= custo;
+            if (item == "Poção de Cura")
+            {
+                this.hp += 50;
+                Console.WriteLine("\nVocê usou uma Poção de Cura e recuperou 50 pontos de vida!");
+            }
+            else if (item == "Espada")
+            {
+                this.ataque += 10;
+            }
+            else if (item == "Escudo")
+            {
+                this.defesa += 10;
+            }
+            else if (item == "Armadura")
+            {
+                this.defesa += 20;
+            }
+            Console.WriteLine($"\nVocê comprou {item}!");
+        }
+        else
+        {
+            Console.WriteLine("\nVocê não tem ouro suficiente!");
+        }
+    }
+}
+
+
+
+
+class Terreno
+    {
+        public string nome;
+        public int missoesCompletas;
+        private static Random random = new Random();
+
+        public Terreno(string nome)
+        {
+            this.nome = nome;
+            this.missoesCompletas = 0;
+        }
+        //Missões
+
+        public void Missao(Personagem jogador)
+        {
+            List<string> missoes = new List<string>
+            {
+                "\nMulher desconhecida:\n -Minha filha sofre de uma doença terrível, por favor encontre uma planta para ajudar a curá-la\n",
+                "\nGarota desconhecida:\n Perdi meu cãozinho no horizonte, poderia me ajudar a encontrá-lo?\n",
+                "\nAldeão:\n Ouvi dizer que por estas terras existe um tesouro enterrado, que me ajudar a procurar?\n",
+                "\nAldeão:\n Estes malditos insetos... poderia me trazer um pouco de veneno para me livrar deles?\n",
+                "\nCriança desconhecida:\n Me perdi dos meus pais, poderia me ajudar a encontrá-los?\n",
+                "\nAldeão:\n Ei amigo se me ajudar com estes pesos posso recompensá-lo\n",
+                "\nSoldado:\n Se me vencer em um duelo irei recompensá-lo",
+                "\nTroll:\n Ei traz planta pra mim, eu te darei ouro ",
+                "\nAnão:\n Preciso de madeira para meu machado, consegue me ajudar com isso?\n",
+                "\nMago:\n Não encontro minha pedra encantada, me ajudaria com isso?\n",
+                "\nHomem desconhecido: Preciso cortar estas madeiras, mas é impossível sozinho, poderia me ajudar?",
+            };
+
+            if (this.missoesCompletas < 15)
+            {
+                string missaoAtual = missoes[random.Next(missoes.Count)];
+                Console.WriteLine($"\nMissão: {missaoAtual}");
+                Console.Write("Você deseja tentar completar essa missão? (Sim/Não) ");
+                string escolha = Console.ReadLine().ToLower();
+
+                if (escolha == "sim")
+                {
+                    bool sucesso = random.NextDouble() > 0.3; // 70% de chance de sucesso
+                    if (sucesso)
+                    {
+                        Console.WriteLine("\nMissão completada com sucesso!");
+                        this.missoesCompletas++;
+                        int ouro = random.Next(5, 20);
+                        jogador.ouro += ouro;
+                        Console.WriteLine($"\nVocê ganhou {ouro} moedas de ouro!");
+                        if (this.missoesCompletas == random.Next(4, 15))
+                        {
+                            Console.WriteLine("\nUma criatura especial apareceu!");
+                            Monstro monstroEspecial = new Boss();
+                            Batalhar.batalhar(jogador, monstroEspecial);
+                            if (monstroEspecial.hp <= 0)
+                            {
+                                jogador.hp += 20;
+                                jogador.ataque += 5;
+                                jogador.defesa += 5;
+                                Console.WriteLine("\nSeus atributos foram aumentados!");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nMissão falhou. Tente novamente mais tarde.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("\nTalvez da próxima vez!");
+                }
+            }
+            else
+            {
+                Console.WriteLine("\nVocê já completou todas as missões deste terreno!");
+            }
+        }
+    }
+
+
+
+using System;
+class Cidade
+{
+    public static void cidade(Personagem jogador)
+    {
+        Console.WriteLine("\nBem-vindo à cidade!");
+        bool sairDaLoja = false;
+        
+        while (!sairDaLoja)
+        {
+            Console.WriteLine("\n1. Comprar Poção de Cura (30 ouro)");
+            Console.WriteLine("2. Comprar Espada (50 ouro)");
+            Console.WriteLine("3. Comprar Escudo (40 ouro)");
+            Console.WriteLine("4. Comprar Armadura (80 ouro)");
+            Console.WriteLine("5. Sair da loja");
+
+            Console.Write("\nO que você gostaria de fazer? ");
+            string input = Console.ReadLine();
+            int escolha;
+
+            if (!int.TryParse(input, out escolha) || escolha < 1 || escolha > 5)
+            {
+                Console.WriteLine("\nOpção inválida!");
+                continue;
+            }
+
+            switch (escolha)
+            {
+                case 1:
+                    ComprarItem(jogador, "Poção de Cura", 30);
+                    break;
+                case 2:
+                    ComprarItem(jogador, "Espada", 50);
+                    break;
+                case 3:
+                    ComprarItem(jogador, "Escudo", 40);
+                    break;
+                case 4:
+                    ComprarItem(jogador, "Armadura", 80);
+                    break;
+                case 5:
+                    Console.WriteLine("\nAté logo!");
+                    sairDaLoja = true;
+                    break;
+            }
+        }
+    }
+
+    private static void ComprarItem(Personagem jogador, string item, int custo)
+    {
+        if (jogador.ouro >= custo)
+        {
+            jogador.ComprarItem(item, custo);
+            Console.WriteLine($"{item} comprado com sucesso! Restam {jogador.ouro} de ouro.");
+        }
+        else
+        {
+            Console.WriteLine($"Você não tem ouro suficiente para comprar {item}. Necessário: {custo}, Disponível: {jogador.ouro}.");
+        }
+    }
+}
+
+
+
+public abstract class Monstro
+    {
+        private static Random random = new Random();
+        public string nome;
+        public int hp;
+        public int ataque;
+        public int defesa;
+        public int recompensa;
+        public int ouro;
+
+        public Monstro(string nome, int hp, int ataque, int defesa, int recompensa, int ouro)
+        {
+            this.nome = nome;
+            this.hp = hp;
+            this.ataque = ataque;
+            this.defesa = defesa;
+            this.recompensa = recompensa;
+            this.ouro = ouro;
+        }
+
+        public int Atacado(int poder)
+        {
+            int dano = Math.Max(poder - this.defesa, 0);
+            this.hp -= dano;
+            return dano;
+        }
+
+        // Método abstrato para encontrar um monstro
+        public abstract Monstro EncontrarMonstro();
+    }
+
+
+
+using System;
+
+public static class GeradorDeMonstros
+{
+    private static Random random = new Random();
+
+    public static Monstro CriarMonstro()
+    {
+        int tipoMonstro = random.Next(0, 8); // Gera um número aleatório entre 0 e 7, correspondendo ao número de tipos de monstros
+        switch (tipoMonstro)
+        {
+            case 0:
+                return new Dragao();
+            case 1:
+                return new Boss();
+            case 2:
+                return new ElfoNegro();
+            case 3:
+                return new Goblin();
+            case 4:
+                return new Lobo();
+            case 5:
+                return new MagoSombrio();
+            case 6:
+                return new Orc();
+            case 7:
+                return new Troll();
+            default:
+                throw new Exception("Tipo de monstro desconhecido."); // Para segurança, mas nunca deve chegar aqui devido ao range do Next()
+        }
+    }
+}
+
+
+
+class Batalhar
+
+{
+    private static Random random = new Random();
+
+    //Função de batalhar
+    public static void batalhar(Personagem jogador, Monstro monstro)
+    {
+        Console.WriteLine($"\nUm {monstro.nome} apareceu!");
+        while (jogador.hp > 0 && monstro.hp > 0)
+        {
+            Console.WriteLine($"\n\nStatus\nHP: {jogador.hp}\nAtaque: {jogador.ataque}\nDefesa: {jogador.defesa}\nOuro: {jogador.ouro}\n\n");
+            
+            // Mostra as opções do menu
+            Console.WriteLine("Escolha sua ação:");
+            Console.WriteLine("1 - Atacar");
+            Console.WriteLine("2 - Defender");
+            Console.WriteLine("3 - Fugir");
+            Console.Write("Opção: ");
+
+            string acaoJogador;
+            do
+            {
+                acaoJogador = Console.ReadLine();
+                if (acaoJogador != "1" && acaoJogador != "2" && acaoJogador != "3")
+                {
+                    Console.WriteLine("Opção inválida. Por favor, escolha 1 para atacar, 2 para defender ou 3 para fugir.");
+                    Console.Write("Opção: ");
+                }
+            } while (acaoJogador != "1" && acaoJogador != "2" && acaoJogador != "3");
+
+            if (acaoJogador == "3") // Fugir
+            {
+                if (random.NextDouble() > 0.7) // 30% de chance de fuga bem-sucedida
+                {
+                    Console.WriteLine("Você conseguiu fugir!");
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine("A fuga falhou!");
+                    acaoJogador = "1"; // Se a fuga falhar, o jogador ataca automaticamente
+                }
+            }
+
+            string[] acoesMonstro = { "atacar", "defender" };
+            string acaoMonstro = acoesMonstro[random.Next(acoesMonstro.Length)];
+
+            bool critico = random.NextDouble() < 0.1; // 10% de chance de acerto crítico
+
+            if (acaoJogador == "1") // Ataque
+            {
+                if (acaoMonstro == "atacar")
+                {
+                    int dano = CalcularDano(jogador, monstro, critico);
+                    Console.WriteLine($"Você causou {dano} de dano ao {monstro.nome}.");
+                    monstro.hp -= dano;
+
+                    dano = CalcularDano(jogador, monstro);
+                    Console.WriteLine($"{monstro.nome} te atacou e causou {dano} de dano.");
+                    jogador.hp -= dano;
+                }
+                else // Monstro defende
+                {
+                    int dano = CalcularDano(jogador, monstro, critico);
+                    int ataque_defendido = dano - monstro.defesa;
+                    Console.WriteLine($"Monstro usou Defesa. Você causou {ataque_defendido} de dano ao {monstro.nome}.");
+                    monstro.hp -= ataque_defendido;
+                }
+            }
+            else if (acaoJogador == "2") // Defesa
+            {
+                if (acaoMonstro == "atacar")
+                {
+                    int dano = CalcularDano(jogador, monstro);
+                    Console.WriteLine($"{monstro.nome} te atacou, mas você se defendeu e recebeu apenas {dano} de dano.");
+                    jogador.hp -= dano;
+                }
+                else // Ambos defendem
+                {
+                    Console.WriteLine("Ambos escolheram se defender, nada aconteceu!");
+                }
+            }
+
+            if (monstro.hp <= 0)
+            {
+                Console.WriteLine($"Você derrotou o {monstro.nome}!");
+                jogador.ouro += monstro.ouro;
+                Console.WriteLine($"\nVocê ganhou {monstro.ouro} moedas de ouro!");
+                return;
+            }
+
+            if (jogador.hp <= 0)
+            {
+                Console.WriteLine("Você foi derrotado!");
+                return;
+            }
+        }
+    }
+
+    //Função de calcular dano
+    static int CalcularDano(Personagem atacante, Monstro defensor, bool critico = false)
+    {
+        int danoBase = atacante.ataque - defensor.defesa;
+        if (critico)
+        {
+            danoBase += (int)(0.5 * atacante.ataque);
+        }
+        return Math.Max(danoBase, 0);
+    }
+}
+
+
+
+class Orc : Monstro
+{
+    public Orc() : base("Orc", 40, 5, 2, 20, 20) { }
+
+
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new Orc();
+    }
+}
+
+
+
+class MagoSombrio : Monstro
+{
+    public MagoSombrio() : base("Mago Sombrio", 40, 5, 2, 50, 50) { }
+
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new MagoSombrio();
+    }
+}
+
+
+
+    class Lobo : Monstro {
+        public Lobo() : base("Lobo", 40, 5, 2, 10, 10) { }
+
+        // Implementação do método abstrato
+        public override Monstro EncontrarMonstro() {
+            return new Lobo();
+        }
+    }
+
+
+
+class Goblin : Monstro
+{
+    public Goblin() : base("Goblin", 50, 7, 3, 15, 15) { }
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new Goblin();
+    }
+}
+
+
+
+class ElfoNegro : Monstro
+{
+    public ElfoNegro() : base("Elfo Negro", 200, 3, 2, 100, 100) { }
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new ElfoNegro();
+    }
+}
+
+
+
+class Dragao : Monstro
+{
+    public Dragao() : base("Dragão", 300, 15, 5, 200, 200) { }
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new Dragao();
+    }
+}
+
+
+
+class Boss : Monstro
+{
+    public Boss() : base("Dragão Brilhante", 500, 30, 50, 200, 200) { }
+
+    public override Monstro EncontrarMonstro()
+    {
+        return new Boss();
+    }
+}
